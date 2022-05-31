@@ -1,0 +1,5 @@
+{
+    "mesonbuild.configureOnOpen": true,
+    "exename": "@exename@",
+    "builddir": "@builddir@"
+}

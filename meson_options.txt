@@ -1,0 +1,2 @@
+option('exename', type : 'string', value : 'main', description : 'Name of the compiler executable')
+option('vscode_configure', type : 'boolean', value : true, description : 'Automatically configure for VSCode editing')

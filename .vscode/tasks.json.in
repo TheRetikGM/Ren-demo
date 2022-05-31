@@ -1,0 +1,14 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Meson: Build & Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"Meson: Build all targets",
+				"Meson: Run src/@exename@"
+			],
+			"problemMatcher": []
+		}
+	]
+}

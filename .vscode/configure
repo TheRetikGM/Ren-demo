@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Find include directories based on include_directories() statements in meson.build files
+include_directories=""
+for file in $(grep -il 'include_directories(' `find $MESON_SOURCE_ROOT -type f -name 'meson.build' | xargs` | xargs)
+do
+	# Get list of includes from meson.build file
+	includes=$(cat $file | tr -d '\n' | grep -Eo 'include_directories\([^\)]*\)' | tr -d ' ' | sed 's/include_directories(\(.*\))/\1/g' | sed "s/'\|^'\.'$//g" | sed "s/,/ /g")
+	# Create full paths to include directories by combining path to meson.build file and path to include (which is relative to this meson.build file) 
+	for include in $includes
+	do
+		# Replace MESON_SOURCE_ROOT prefix with ${workspaceFolder} and replace meson.build with include path
+		path=$(echo $file | sed 's@\(.*\)meson.build@"\1'"$include"'"@g' | sed 's@"'"$MESON_SOURCE_ROOT"'@"${workspaceFolder}@g')
+		# Append to the list of includes
+		include_directories="$include_directories$path, "
+	done
+done
+# Append include diretories, so that we can find config.h.in files
+include_directories="$include_directories"'"${config:builddir}/", "${config:builddir}/subprojects"'
+
+# Replace variables in .in files
+for file in $(ls -1 $MESON_SOURCE_ROOT/.vscode/*.in | xargs)
+do
+	json_filename=$(echo $file | sed 's/.in$//g')
+	cat $file \
+		| sed 's/@exename@/'"$EXENAME"'/g' \
+		| sed 's+@builddir@+'"$MESON_BUILD_ROOT"'+g' \
+		| sed 's+@include_directories@+'"$include_directories"'+g' \
+		> $json_filename
+	
+	# If jq is available, then reformat the outputted file in pretty JSON format with 4 spaces as tabs
+	which jq > /dev/null
+	if [[ $? -eq 0 ]]
+	then
+		cat $json_filename | jq | sed 's/  /    /g' > "$json_filename.tmp"
+		mv "$json_filename.tmp" $json_filename
+	fi
+done
+
+exit 0
