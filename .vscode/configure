@@ -16,7 +16,7 @@ do
 	done
 done
 # Append include diretories, so that we can find config.h.in files
-include_directories="$include_directories"'"${config:builddir}/", "${config:builddir}/subprojects"'
+include_directories="$include_directories"'"${config:builddir}/", "${config:builddir}/subprojects/Ren"'
 
 # Replace variables in .in files
 for file in $(ls -1 $MESON_SOURCE_ROOT/.vscode/*.in | xargs)
