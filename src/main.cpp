@@ -21,40 +21,11 @@ public:
 		ResourceManager::LoadTexture(ASSETS_DIR "awesomeface.png", true, "face");
 		ResourceManager::LoadShader(SHADERS_DIR "vertex.vert", SHADERS_DIR "fragment.frag", nullptr, "shader");
 
-		float vertices[] = {
-			-0.5f,  0.5f,  0.0f,
-			 0.5f,  0.5f,  0.0,
-			 0.5f, -0.5f,  0.0,
-			-0.5f, -0.5f,  0.0,
-		};
-		float colors[] = {
-			1.0f, 0.0f, 0.0f,
-			0.0f, 1.0f, 0.0f,
-			0.0f, 0.0f, 1.0f,
-			0.0f, 1.0f, 1.0f
-		};
-		uint32_t indices[] = {0, 1, 2, 0, 2, 3};
-
-		auto vbo_pos = VertexBuffer::Create(vertices, sizeof(vertices));
-		vbo_pos->SetLayout({{ 0, ShaderDataType::vec3 }});
-		auto vbo_col = VertexBuffer::Create(colors, sizeof(colors));
-		vbo_col->SetLayout({{ 1, ShaderDataType::vec3 }});
-		auto ebo = ElementBuffer::Create(indices, sizeof(indices));
-		vao = VertexArray::Create();
-		vao->AddVertexBuffer(vbo_pos).AddVertexBuffer(vbo_col).SetElementBuffer(ebo);
-
-		batch = TextureBatch::Create();
-		batch->ChannelCount = 2;
-		for (char c = 'a'; c <= 'f'; c++)
-		{
-			RawTexture tex = RawTexture::Load((ASSETS_DIR + std::string(1, c) + ".png").c_str());
-			batch->AddTexture(tex);
-			RawTexture::Delete(tex);
-		}
-		batch->Build();
+		Renderer2D::Init();
 	}
 	void Delete()
 	{
+		Renderer2D::Destroy();
 	}
 	void ProcessInput()
 	{
@@ -66,20 +37,39 @@ public:
 	}
 	void Render()
 	{
-		// Renderer::BeginScene();
-		// ResourceManager::GetShader("shader").Use();
-		// Renderer::Submit(vao);
-		// Renderer::EndScene();
-		// basic_renderer->RenderShape(br_Shape::circle, {10.0f, 10.0f}, {50.0f, 50.0f}, 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-		// Texture2D* tex = dynamic_cast<Texture2D*>(batch.get());
-		// sprite_renderer->RenderSprite(*tex, glm::vec2(0.0f), glm::vec2(tex->Width, tex->Height) * 1.0f);
-		int x = 0;
-		for (int i = 0; i < 6; i++)
+		Renderer2D::BeginScene(pixel_projection, glm::mat4(1.0f));
 		{
-			auto desc = batch->GetTextureDescriptor(i);
-			sprite_renderer->RenderPartialSprite(*desc.pTexture, desc.offset, desc.size, glm::vec2(x, 10), glm::vec2(100.0f));
-			x += 100.0f;
+			Transform t;
+			Material m;
+
+			glm::vec2 offset(100.0f);
+			glm::vec2 quad_size(75.0f);
+			glm::vec2 spacing(5.0f);
+
+			for (int i = 0; i < 100; i++)
+			{
+				int x = i % 10;
+				int y = i / 10;
+
+				t.position = offset + glm::vec2(x, y) * (quad_size + spacing);
+				t.size = quad_size;
+				t.rotation = GetTimeFromStart() * 40;
+				glm::vec4 colors[7] = {
+					{1.0f, 0.0f, 0.0f, 1.0f},
+					{0.0f, 1.0f, 0.0f, 1.0f},
+					{0.0f, 0.0f, 1.0f, 1.0f},
+					{1.0f, 1.0f, 0.0f, 1.0f},
+					{1.0f, 0.0f, 1.0f, 1.0f},
+					{0.0f, 1.0f, 1.0f, 1.0f},
+					{1.0f, 1.0f, 1.0f, 1.0f},
+				};
+				m.color = colors[i % 7];
+
+				Renderer2D::SubmitQuad(t, m);
+			}
 		}
+		Renderer2D::EndScene();
+		Renderer2D::Render();
 
 		// ImGui::Begin("Hello, World!", NULL, ImGuiWindowFlags_AlwaysAutoResize);
 		// ImGui::Text("Hello, this is OpenGL template demo!");
