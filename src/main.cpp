@@ -12,32 +12,54 @@ class Game : public GameCore
 {
 	Ref<VertexArray> vao;
 	Ref<TextureBatch> batch;
-
+	int32_t tex_ids[7];
 public:
 	Game(unsigned int width, unsigned int height) : GameCore(width, height) {}
 
 	void Init()
 	{
-		ResourceManager::LoadTexture(ASSETS_DIR "awesomeface.png", true, "face");
+		//ResourceManager::LoadTexture(ASSETS_DIR "awesomeface.png", true, "face");
 		ResourceManager::LoadShader(SHADERS_DIR "vertex.vert", SHADERS_DIR "fragment.frag", nullptr, "shader");
 
-		Renderer2D::Init();
+		auto face = RawTexture::Load(ASSETS_DIR "awesomeface.png");
+		renderer_2d->BeginPrepare();
+
+		for (int i = 0; i < 6; i++)
+		{
+			auto tex = RawTexture::Load((ASSETS_DIR + std::string(1, 'a' + i) + ".png").c_str());
+			tex_ids[i] = renderer_2d->PrepareTexture(tex);
+			tex.Delete();
+		}
+
+		tex_ids[6] = renderer_2d->PrepareTexture(face);
+		renderer_2d->EndPrepare();
+		face.Delete();
+
+		std::srand(std::time(0));
 	}
 	void Delete()
 	{
-		Renderer2D::Destroy();
 	}
 	void ProcessInput()
 	{
 		if (Input->Pressed(Key::ESCAPE))
 			Exit();
+		if (Input->Pressed(Key::P))
+		{
+			auto tex_desc = renderer_2d->GetTextureDescriptor(0);
+			RawTexture batch = Utils::GLToRawTexture(*tex_desc.pTexture);
+			Utils::SaveTexturePNG("/home/kuba/projects/git/Ren-demo/builddir/test.png", batch, false);
+			batch.Delete();
+		}
 	}
 	void Update(float dt)
 	{
+		this->dt = dt;
 	}
+	float dt;
 	void Render()
 	{
-		Renderer2D::BeginScene(pixel_projection, glm::mat4(1.0f));
+		renderer_2d->BeginScene(pixel_projection, glm::mat4(1.0f));
 		{
 			Transform t;
 			Material m;
@@ -46,30 +68,43 @@ public:
 			glm::vec2 quad_size(75.0f);
 			glm::vec2 spacing(5.0f);
 
-			for (int i = 0; i < 100; i++)
+			int w = 20;
+			int h = 10;
+
+			static glm::vec3 colors[4] = {
+				{ 1.0f, 0.0f, 0.0f },
+				{ 0.0f, 1.0f, 0.0f },
+				{ 0.0f, 0.0f, 1.0f },
+				{ 0.0f, 1.0f, 1.0f }
+			};
+
+			static glm::vec3 rand_rot(Helper::RandomFloat_0_1(), Helper::RandomFloat_0_1(), Helper::RandomFloat_0_1());
+
+			for (int i = 0; i < 4; i++)
+				colors[i] = glm::vec3(glm::rotate(glm::mat4(1.0f), -dt * 1.0f, rand_rot) * glm::vec4(colors[i], 0.0f));
+
+			for (int i = 0; i < w * h; i++)
 			{
-				int x = i % 10;
-				int y = i / 10;
+				int x = i % w;
+				int y = i / w;
 
 				t.position = offset + glm::vec2(x, y) * (quad_size + spacing);
 				t.size = quad_size;
 				t.rotation = GetTimeFromStart() * 40;
-				glm::vec4 colors[7] = {
-					{1.0f, 0.0f, 0.0f, 1.0f},
-					{0.0f, 1.0f, 0.0f, 1.0f},
-					{0.0f, 0.0f, 1.0f, 1.0f},
-					{1.0f, 1.0f, 0.0f, 1.0f},
-					{1.0f, 0.0f, 1.0f, 1.0f},
-					{0.0f, 1.0f, 1.0f, 1.0f},
-					{1.0f, 1.0f, 1.0f, 1.0f},
-				};
-				m.color = colors[i % 7];
 
-				Renderer2D::SubmitQuad(t, m);
+				// Bilinear interpolation
+				float w11 = (w - x) * (h - y);
+				float w12 = (w - x) * y;
+				float w21 = x * (h - y);
+				float w22 = x * y;
+				m.color = glm::vec4((w11 * colors[0] + w21 * colors[1] + w22 * colors[2] + w12 * colors[3]) / float(w * h), i % 7 == 5 ? 0.65f : 1.0f);
+
+				m.texture_id = tex_ids[i % 7];
+				renderer_2d->SubmitQuad(t, m);
 			}
 		}
-		Renderer2D::EndScene();
-		Renderer2D::Render();
+		renderer_2d->EndScene();
+		renderer_2d->Render();
 
 		// ImGui::Begin("Hello, World!", NULL, ImGuiWindowFlags_AlwaysAutoResize);
 		// ImGui::Text("Hello, this is OpenGL template demo!");
