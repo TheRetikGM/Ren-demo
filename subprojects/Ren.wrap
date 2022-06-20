@@ -2,3 +2,7 @@
 url = https://github.com/TheRetikGM/Ren
 revision = head
 push-url = git@github.com:TheRetikGM/Ren
+
+[provides]
+ren = ren_dep
+imgui = imgui_dep
