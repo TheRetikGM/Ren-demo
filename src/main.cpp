@@ -23,15 +23,17 @@ public:
 
 		auto face = RawTexture::Load(ASSETS_DIR "awesomeface.png");
 		renderer_2d->BeginPrepare();
-
-		for (int i = 0; i < 6; i++)
 		{
-			auto tex = RawTexture::Load((ASSETS_DIR + std::string(1, 'a' + i) + ".png").c_str());
-			tex_ids[i] = renderer_2d->PrepareTexture(tex);
-			tex.Delete();
-		}
+			for (int i = 0; i < 6; i++)
+			{
+				auto tex = RawTexture::Load((ASSETS_DIR + std::string(1, 'a' + i) + ".png").c_str());
+				tex_ids[i] = renderer_2d->PrepareTexture(tex);
+				tex.Delete();
+			}
+			tex_ids[6] = renderer_2d->PrepareTexture(face);
 
-		tex_ids[6] = renderer_2d->PrepareTexture(face);
+			text_renderer->Load(ASSETS_DIR "fonts/DejaVuSansCondensed.ttf", 64);
+		}
 		renderer_2d->EndPrepare();
 		face.Delete();
 
@@ -51,6 +53,11 @@ public:
 			Utils::SaveTexturePNG("/home/kuba/projects/git/Ren-demo/builddir/test.png", batch, false);
 			batch.Delete();
 		}
+		static bool imgui_show_demo = false;
+		if (Input->Pressed(Key::I))
+			imgui_show_demo = !imgui_show_demo;
+		if (imgui_show_demo)
+			ImGui::ShowDemoWindow();
 	}
 	void Update(float dt)
 	{
@@ -89,7 +96,7 @@ public:
 				int y = i / w;
 
 				t.position = offset + glm::vec2(x, y) * (quad_size + spacing);
-				t.size = quad_size;
+				t.scale = quad_size;
 				t.rotation = GetTimeFromStart() * 40;
 
 				// Bilinear interpolation
@@ -102,6 +109,8 @@ public:
 				m.texture_id = tex_ids[i % 7];
 				renderer_2d->SubmitQuad(t, m);
 			}
+
+			text_renderer->RenderText("Hello, World!", 200.0f, 200.0f, 1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
 		}
 		renderer_2d->EndScene();
 		renderer_2d->Render();
