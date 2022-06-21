@@ -71,12 +71,12 @@ public:
 			Transform t;
 			Material m;
 
-			glm::vec2 offset(100.0f);
-			glm::vec2 quad_size(75.0f);
+			glm::vec2 offset(50.0f);
+			glm::vec2 quad_size(15.0f);
 			glm::vec2 spacing(5.0f);
 
-			int w = 20;
-			int h = 10;
+			int w = 90;
+			int h = 40;
 
 			static glm::vec3 colors[4] = {
 				{ 1.0f, 0.0f, 0.0f },
@@ -90,7 +90,7 @@ public:
 			for (int i = 0; i < 4; i++)
 				colors[i] = glm::vec3(glm::rotate(glm::mat4(1.0f), -dt * 1.0f, rand_rot) * glm::vec4(colors[i], 0.0f));
 
-			for (int i = 0; i < w * h; i++)
+			for (int i = 0, layer = 0; i < w * h; i++, layer += (i % 50 == 0) ? 1 : 0)
 			{
 				int x = i % w;
 				int y = i / w;
@@ -110,7 +110,7 @@ public:
 				renderer_2d->SubmitQuad(t, m);
 			}
 
-			text_renderer->RenderText("Hello, World!", 200.0f, 200.0f, 1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+			text_renderer->RenderText("FPS: " + std::to_string(1.0f / dt), 10.0f, 10.0f, 0.5f, glm::vec3(1.0f, 1.0f, 0.0f));
 		}
 		renderer_2d->EndScene();
 		renderer_2d->Render();
