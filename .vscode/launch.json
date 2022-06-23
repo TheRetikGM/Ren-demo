@@ -11,7 +11,7 @@
             "program": "${config:builddir}/src/${config:exename}",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",
+            "cwd": "${config:builddir}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",

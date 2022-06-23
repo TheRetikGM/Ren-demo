@@ -2,13 +2,16 @@
 #include <vector>
 #include <Ren/Renderer/Renderer.h>
 #include "stb_image_write.h"
+#include "GUILogger.hpp"
 
 unsigned int SCREEN_WIDTH = 800;
 unsigned int SCREEN_HEIGHT = 600;
 
 using namespace Ren;
 
+
 void imgui_frame_handler();
+GUILogger logger;
 
 class Game : public GameCore
 {
@@ -65,9 +68,20 @@ public:
 			imgui_show_demo = !imgui_show_demo;
 		if (imgui_show_demo)
 			ImGui::ShowDemoWindow();
+
+		if (Input->Pressed(Key::NUM_1))
+			LOG_I("Hello!");
+		if (Input->Pressed(Key::NUM_2))
+			LOG_W("Hello!");
+		if (Input->Pressed(Key::NUM_3))
+			LOG_E("Hello!");
+		if (Input->Pressed(Key::NUM_4))
+			LOG_C("Hello!");
 	}
 	void Update(float dt)
 	{
+		//Ren::Logger::LogI("Hello there!", "", -1);
+
 		this->dt = dt;
 	}
 	float dt = 0.0f;
@@ -86,7 +100,6 @@ public:
 		renderer_2d->EndScene();
 		renderer_2d->Render();
 		game_view->Unbind();
-
 		// sprite_renderer->RenderGLTexture(game_view->GetColorAttachmentID(0), {0.0f, 0.0f}, game_view->Size, 0.0f, glm::vec3(1.0f), false, true);
 	}
 	void OnResize() override 
@@ -103,50 +116,20 @@ void imgui_frame_handler()
 {
 	ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 	ImGui::Begin("Game View");
-	ImVec2 a_space = ImGui::GetWindowContentRegionMax();
+	// ImVec2 a_space = ImGui::GetWindowContentRegionMax();
 	static ImVec2 game_view_size(game->game_view->Width, game->game_view->Height);
 	//game_view_size.y = game_view_size.x / (game->game_view->Width / game->game_view->Height);
 	ImGui::Image(ImTextureID(intptr_t(game->game_view->GetColorAttachmentID(0))), game_view_size, ImVec2(0, 1), ImVec2(1, 0));
 	ImGui::End();
 
-	ImGui::Begin("Logger");
-	ImVec2 a_size = ImGui::GetContentRegionMax();
-	ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit;
-	if (ImGui::BeginTable("table_log", 3, flags, ImVec2(0.0f, a_size.y - ImGui::GetTextLineHeight() * 2.0f)))
-	{
-		ImGui::TableSetupScrollFreeze(0, 1);
-		ImGui::TableSetupColumn("Timestamp");
-		ImGui::TableSetupColumn("Type");
-		ImGui::TableSetupColumn("Log");
-		ImGui::TableHeadersRow();
-
-		ImGuiListClipper clipper;
-		clipper.Begin(1000);
-		while (clipper.Step())
-		{
-			for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
-			{
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::Text("2022-06-22 22:43:%i", 13 + i);
-				ImGui::TableNextColumn();
-				if (i % 13 == 0 && i != 0)
-					ImGui::TextColored({1.0f, 1.0f, 0.0f, 1.0f}, "Warning");
-				else if (i % 18 == 0 && i != 0)
-					ImGui::TextColored({1.0f, 0.0f, 0.0f, 1.0f}, "Error");
-				else
-					ImGui::TextColored({0.0f, 1.0f, 1.0f, 1.0f}, "Info");
-				ImGui::TableNextColumn();
-				ImGui::Text("This is dummy text %i. Bla bla.", i);
-			}
-		}
-		ImGui::EndTable();
-	}
-	ImGui::End();
+	logger.Draw();
 
 	ImGui::Begin("Settings");
 	ImGui::DragFloat("View width", &game_view_size.x);
 	ImGui::Checkbox("Wireframe", &game->mWireframeRender);
+	ImGui::Separator();
+	if (ImGui::Button("Exit"))
+		game->Exit();
 	ImGui::End();
 
 	ImGui::Begin("Info");
@@ -172,6 +155,8 @@ void imgui_frame_handler()
 
 int main()
 {
+	Logger::EntryHandler = &logger;
+
 	game = new Game(SCREEN_WIDTH, SCREEN_HEIGHT);
 	GameLauncher launcher(game);
 	launcher.GuiTheme = ImGuiTheme::dark;
