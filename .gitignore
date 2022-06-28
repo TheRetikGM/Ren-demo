@@ -4,6 +4,7 @@
 subprojects/Ren
 imgui.ini
 .vscode
+.vscode/*
 subprojects/imgui*
 subprojects/vscode-meson-config
 packagecache
