@@ -17,7 +17,6 @@ conf_inc = include_directories('.')
 # Add source files and executable
 subdir('src')
 
-# VSCode configuration data
-if build_machine.system() == 'linux' and get_option('vscode_configure') == true
-  run_command(files('.vscode/configure'), env : ['EXENAME=' + exename], check : false)
+if get_option('vscode_configure') == true
+  subproject('vscode-meson-config', required : true)
 endif

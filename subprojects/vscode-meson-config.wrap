@@ -1,0 +1,4 @@
+[wrap-git]
+url = https://github.com/theretikgm/vscode-meson-config.git
+push-url = git@github.com:TheRetikGM/vscode-meson-config.git
+revision = head

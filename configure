@@ -1,3 +1,0 @@
-#! /bin/bash
-
-meson setup --buildtype=release -Dvscode_configure=false build

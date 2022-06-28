@@ -3,10 +3,9 @@
 [bB][uU][iI][lL][dD][dD][iI][rR]
 subprojects/Ren
 imgui.ini
-.vscode/settings.json
-.vscode/tasks.json
-.vscode/c_cpp_properties.json
+.vscode
 subprojects/imgui*
+subprojects/vscode-meson-config
 packagecache
 
 # Prerequisites
