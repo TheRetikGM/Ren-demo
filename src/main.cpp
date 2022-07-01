@@ -1,6 +1,7 @@
 #include <Ren/Engine.h>
 #include <vector>
 #include <Ren/Renderer/Renderer.h>
+#include <Ren/ecs/ecs.hpp>
 #include "stb_image_write.h"
 #include "GUILogger.hpp"
 
@@ -8,7 +9,6 @@ unsigned int SCREEN_WIDTH = 800;
 unsigned int SCREEN_HEIGHT = 600;
 
 using namespace Ren;
-
 
 void imgui_frame_handler();
 GUILogger logger;
@@ -21,6 +21,7 @@ class Game : public GameCore
 	Ref<Framebuffer> game_view = nullptr;
 	glm::ivec2 mViewSize = {1600, 800};
 	bool mWireframeRender = false;
+	Ref<Scene> mScene;
 public:
 	Game(unsigned int width, unsigned int height) : GameCore(width, height) {}
 
@@ -48,6 +49,14 @@ public:
 		game_view = Framebuffer::Create2DBasicFramebuffer(mViewSize.x, mViewSize.y);
 
 		std::srand(std::time(0));
+
+		mScene = Scene::Create();
+		EntityID e1 = mScene->NewEntity();
+		mScene->AssignMultiple<Transform, Material>(e1);
+		EntityID e2 = mScene->NewEntity();
+		mScene->Assign<Material>(e2);
+		EntityID e3 = mScene->NewEntity();
+		mScene->Assign<glm::vec3>(e3);
 	}
 	void Delete()
 	{
@@ -70,18 +79,36 @@ public:
 			ImGui::ShowDemoWindow();
 
 		if (Input->Pressed(Key::NUM_1))
-			LOG_I("Hello!");
+		{
+			std::string str = "";
+			for (auto&& ent : SceneView<Material>(*mScene))
+				str += " " + std::to_string(Utils::GetEntityIndex(ent));
+			LOG_I("Material entity ids: " + str);
+		}
 		if (Input->Pressed(Key::NUM_2))
-			LOG_W("Hello!");
+		{
+			std::string str = "";
+			for (auto&& ent : SceneView<Transform>(*mScene))
+				str += " " + std::to_string(Utils::GetEntityIndex(ent));
+			LOG_I("Transform entity ids: " + str);
+		}
 		if (Input->Pressed(Key::NUM_3))
-			LOG_E("Hello!");
+		{
+			std::string str = "";
+			for (auto&& ent : SceneView<Material, Transform>(*mScene))
+				str += " " + std::to_string(Utils::GetEntityIndex(ent));
+			LOG_I("Materal and Transform entity ids: " + str);
+		}
 		if (Input->Pressed(Key::NUM_4))
-			LOG_C("Hello!");
+		{
+			std::string str = "";
+			for (auto&& ent : SceneView<glm::vec3>(*mScene))
+				str += " " + std::to_string(Utils::GetEntityIndex(ent));
+			LOG_I("glm::vec3 entity ids: " + str);
+		}
 	}
 	void Update(float dt)
 	{
-		//Ren::Logger::LogI("Hello there!", "", -1);
-
 		this->dt = dt;
 	}
 	float dt = 0.0f;
