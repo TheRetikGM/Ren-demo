@@ -21,7 +21,7 @@ class Game : public GameCore
 	Ref<Framebuffer> game_view = nullptr;
 	glm::ivec2 mViewSize = {1600, 800};
 	bool mWireframeRender = false;
-	Ref<Scene> mScene;
+	Ref<ecs::Scene> mScene;
 public:
 	Game(unsigned int width, unsigned int height) : GameCore(width, height) {}
 
@@ -50,12 +50,12 @@ public:
 
 		std::srand(std::time(0));
 
-		mScene = Scene::Create();
-		EntityID e1 = mScene->NewEntity();
-		mScene->AssignMultiple<Transform, Material>(e1);
-		EntityID e2 = mScene->NewEntity();
-		mScene->Assign<Material>(e2);
-		EntityID e3 = mScene->NewEntity();
+		mScene = ecs::Scene::Create();
+		ecs::EntityID e1 = mScene->NewEntity();
+		mScene->AssignMultiple<ecs::Transform2D, ecs::SpriteRenderer>(e1);
+		ecs::EntityID e2 = mScene->NewEntity();
+		mScene->Assign<ecs::SpriteRenderer>(e2);
+		ecs::EntityID e3 = mScene->NewEntity();
 		mScene->Assign<glm::vec3>(e3);
 	}
 	void Delete()
@@ -77,35 +77,6 @@ public:
 			imgui_show_demo = !imgui_show_demo;
 		if (imgui_show_demo)
 			ImGui::ShowDemoWindow();
-
-		if (Input->Pressed(Key::NUM_1))
-		{
-			std::string str = "";
-			for (auto&& ent : SceneView<Material>(*mScene))
-				str += " " + std::to_string(Utils::GetEntityIndex(ent));
-			LOG_I("Material entity ids: " + str);
-		}
-		if (Input->Pressed(Key::NUM_2))
-		{
-			std::string str = "";
-			for (auto&& ent : SceneView<Transform>(*mScene))
-				str += " " + std::to_string(Utils::GetEntityIndex(ent));
-			LOG_I("Transform entity ids: " + str);
-		}
-		if (Input->Pressed(Key::NUM_3))
-		{
-			std::string str = "";
-			for (auto&& ent : SceneView<Material, Transform>(*mScene))
-				str += " " + std::to_string(Utils::GetEntityIndex(ent));
-			LOG_I("Materal and Transform entity ids: " + str);
-		}
-		if (Input->Pressed(Key::NUM_4))
-		{
-			std::string str = "";
-			for (auto&& ent : SceneView<glm::vec3>(*mScene))
-				str += " " + std::to_string(Utils::GetEntityIndex(ent));
-			LOG_I("glm::vec3 entity ids: " + str);
-		}
 	}
 	void Update(float dt)
 	{
