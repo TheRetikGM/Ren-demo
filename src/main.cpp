@@ -4,6 +4,7 @@
 #include <Ren/ecs/ecs.hpp>
 #include "stb_image_write.h"
 #include "GUILogger.hpp"
+#include "MoveScript.hpp"
 
 unsigned int SCREEN_WIDTH = 800;
 unsigned int SCREEN_HEIGHT = 600;
@@ -17,11 +18,14 @@ class Game : public GameCore
 {
 	Ref<VertexArray> vao;
 	Ref<TextureBatch> batch;
-	int32_t tex_ids[7];
 	Ref<Framebuffer> game_view = nullptr;
 	glm::ivec2 mViewSize = {1600, 800};
 	bool mWireframeRender = false;
+
+	// ecs
 	Ref<ecs::Scene> mScene;
+	ecs::SystemsManager mSystems;
+	MoveScript move_script;
 public:
 	Game(unsigned int width, unsigned int height) : GameCore(width, height) {}
 
@@ -30,36 +34,35 @@ public:
 		//ResourceManager::LoadTexture(ASSETS_DIR "awesomeface.png", true, "face");
 		ResourceManager::LoadShader(SHADERS_DIR "vertex.vert", SHADERS_DIR "fragment.frag", nullptr, "shader");
 
-		auto face = RawTexture::Load(ASSETS_DIR "awesomeface.png");
+		mScene = ecs::Scene::Create();
+		mSystems.AddSystem<ecs::RenderSystem>();
+		mSystems.AddSystem<ecs::ScriptSystem>();
+		
 		renderer_2d->BeginPrepare();
 		{
-			for (int i = 0; i < 6; i++)
-			{
-				auto tex = RawTexture::Load((ASSETS_DIR + std::string(1, 'a' + i) + ".png").c_str());
-				tex_ids[i] = renderer_2d->PrepareTexture(tex);
-				tex.Delete();
-			}
-			tex_ids[6] = renderer_2d->PrepareTexture(face);
+			auto ent = mScene->NewEntity();
+			
+			auto trans = mScene->Assign<ecs::components::Transform2D>(ent);
+			*trans = { {20.0f, 100.0f}, {200.0f, 200.0f} };
 
+			auto spr = mScene->Assign<ecs::components::SpriteRenderer>(ent);
+			spr->color = {1.0f, 0.0f, 1.0f};
+			spr->image_path = ASSETS_DIR "awesomeface.png";
+
+			mScene->Assign<ecs::components::Script>(ent)->Add(&move_script);
+
+			mSystems.SetScene(mScene.get());
+			mSystems.Init();
 			text_renderer->Load(ASSETS_DIR "fonts/DejaVuSansCondensed.ttf", 64);
 		}
 		renderer_2d->EndPrepare();
-		face.Delete();
 
 		game_view = Framebuffer::Create2DBasicFramebuffer(mViewSize.x, mViewSize.y);
-
 		std::srand(std::time(0));
-
-		mScene = ecs::Scene::Create();
-		ecs::EntityID e1 = mScene->NewEntity();
-		mScene->AssignMultiple<ecs::Transform2D, ecs::SpriteRenderer>(e1);
-		ecs::EntityID e2 = mScene->NewEntity();
-		mScene->Assign<ecs::SpriteRenderer>(e2);
-		ecs::EntityID e3 = mScene->NewEntity();
-		mScene->Assign<glm::vec3>(e3);
 	}
 	void Delete()
 	{
+		mSystems.Destroy();
 	}
 	void ProcessInput()
 	{
@@ -77,9 +80,12 @@ public:
 			imgui_show_demo = !imgui_show_demo;
 		if (imgui_show_demo)
 			ImGui::ShowDemoWindow();
+
+		mSystems.ProcessInput(Input);
 	}
 	void Update(float dt)
 	{
+		mSystems.Update(dt);
 		this->dt = dt;
 	}
 	float dt = 0.0f;
@@ -91,7 +97,7 @@ public:
 		glm::mat4 projection = glm::ortho(0.0f, (float)mViewSize.x, (float)mViewSize.y, 0.0f, 0.0f, -1.0f);
 		renderer_2d->BeginScene(projection, glm::mat4(1.0f));
 		{
-			renderer_2d->SubmitQuad({{20.0f, 100.0f}, {200.0f, 200.0f}, GetTimeFromStart() * 10.0f}, {{1.0f, 0.0f, 1.0f}});
+			mSystems.Render();
 			text_renderer->RenderText("Gaming text.\nLorem ipsum dolor sit amet...", 300.0f, 300.0f, 1.0f, {0.0f, 1.0f, 1.0f});
 			text_renderer->RenderText("FPS: " + std::to_string(1.0f / dt), 10.0f, 10.0f, 0.5f, glm::vec3(0.0f, 1.0f, 0.0f));
 		}
