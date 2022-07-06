@@ -13,6 +13,7 @@ using namespace Ren;
 
 void imgui_frame_handler();
 GUILogger logger;
+bool g_showGui = false;
 
 class Game : public GameCore
 {
@@ -21,6 +22,7 @@ class Game : public GameCore
 	Ref<Framebuffer> game_view = nullptr;
 	glm::ivec2 mViewSize = {1600, 800};
 	bool mWireframeRender = false;
+	PixelCamera m_camera;
 
 	// ecs
 	Ref<ecs::Scene> mScene;
@@ -58,6 +60,7 @@ public:
 		renderer_2d->EndPrepare();
 
 		game_view = Framebuffer::Create2DBasicFramebuffer(mViewSize.x, mViewSize.y);
+		m_camera.Init(game_view->Size);
 		std::srand(std::time(0));
 	}
 	void Delete()
@@ -75,40 +78,62 @@ public:
 			Utils::SaveTexturePNG("/home/kuba/projects/git/Ren-demo/builddir/test.png", batch, false);
 			batch.Delete();
 		}
+		if (Input->Pressed(Key::SPACE))
+		{
+			m_camera.SetPosition({ 0.0f, 0.0f });
+			m_camera.SetZoom(1.0f);
+		}
 		static bool imgui_show_demo = false;
 		if (Input->Pressed(Key::I))
 			imgui_show_demo = !imgui_show_demo;
 		if (imgui_show_demo)
 			ImGui::ShowDemoWindow();
+		if (Input->Held(Key::LEFT_CONTROL) && Input->Pressed(Key::G)) {
+			g_showGui = !g_showGui;
+			if (g_showGui)
+				Logger::SetHandler(&logger);
+			else
+				Logger::SetDefaultHandler();
+		}
 
 		mSystems.ProcessInput(Input);
 	}
 	void Update(float dt)
 	{
+		m_camera.Update(Input, dt);
 		mSystems.Update(dt);
 		this->dt = dt;
 	}
+	void ProcessScroll(float yoffset)
+	{
+		m_camera.AddToZoom(yoffset * 0.1f);
+	};
 	float dt = 0.0f;
 	void Render()
 	{
 		game_view->Bind();
 		game_view->Clear({0.2f, 0.2f, 0.2f, 1.0f});
 		RenderAPI::WireframeRender(mWireframeRender);
-		glm::mat4 projection = glm::ortho(0.0f, (float)mViewSize.x, (float)mViewSize.y, 0.0f, 0.0f, -1.0f);
-		renderer_2d->BeginScene(projection, glm::mat4(1.0f));
+		renderer_2d->BeginScene(&m_camera);
 		{
 			mSystems.Render();
 			text_renderer->RenderText("Gaming text.\nLorem ipsum dolor sit amet...", 300.0f, 300.0f, 1.0f, {0.0f, 1.0f, 1.0f});
-			text_renderer->RenderText("FPS: " + std::to_string(1.0f / dt), 10.0f, 10.0f, 0.5f, glm::vec3(0.0f, 1.0f, 0.0f));
+			text_renderer->RenderText("FPS: " + std::to_string(1.0f / dt) + "\nGui: " + (g_showGui ? "yes" : "no"), 10.0f, 10.0f, 0.5f, glm::vec3(0.0f, 1.0f, 0.0f));
 		}
 		renderer_2d->EndScene();
 		renderer_2d->Render();
 		game_view->Unbind();
-		// sprite_renderer->RenderGLTexture(game_view->GetColorAttachmentID(0), {0.0f, 0.0f}, game_view->Size, 0.0f, glm::vec3(1.0f), false, true);
+
+		if (!g_showGui)
+		{
+			RenderAPI::WireframeRender(false);
+			sprite_renderer->RenderGLTexture(game_view->GetColorAttachmentID(0), {0.0f, 0.0f}, game_view->Size, 0.0f, glm::vec3(1.0f), false, true);
+		}
 	}
 	void OnResize() override 
 	{
-		//game_view->Resize(Width, Height);
+		game_view->Resize(Width, Height);
+		m_camera.OnResize(game_view->Size);
 	}
 
 	friend void imgui_frame_handler();
@@ -118,6 +143,8 @@ Game* game;
 
 void imgui_frame_handler()
 {
+	if (!g_showGui)
+		return;
 	ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 	ImGui::Begin("Game View");
 	// ImVec2 a_space = ImGui::GetWindowContentRegionMax();

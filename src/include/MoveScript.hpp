@@ -7,14 +7,14 @@ using namespace Ren::ecs::components;
 class MoveScript : public ecs::ScriptBehavior
 {
     Transform2D* transform;
-    float move_speed = 200.0f;
+    float move_speed = 500.0f;
     InputInterface* input{ nullptr };
 public:
 
     void Init() override
     {
         transform = get<Transform2D>();
-        transform->layer = 1;
+        transform->layer = 0;
         LOG_I("Movement initialized. Use WSAD to move around!");
     }
     void ProcessInput(InputInterface* input) override
